@@ -166,8 +166,8 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* LNMIIT Header */}
-      <header className="bg-lnmiit-maroon text-white py-4 px-6 shadow-md">
-        <div className="container mx-auto flex justify-between items-center">
+      <header className="bg-lnmiit-maroon text-white py-4 px-4 sm:px-6 shadow-md">
+        <div className="container mx-auto flex flex-row justify-between items-center">
           <img src={logo} alt="LNMIIT Logo" className="h-12 md:h-16 bg-white p-2 rounded" />
           <Button 
             onClick={handleLogout}
@@ -179,9 +179,9 @@ const AdminDashboard = () => {
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-between items-center mb-8">
-          <div>
+      <div className="container mx-auto py-8 px-2 sm:px-4 md:px-8">
+        <div className="flex flex-row justify-between items-center mb-8">
+          <div className="text-left">
             <h2 className="text-3xl font-bold text-gray-800">My Events</h2>
             <p className="text-gray-600">Manage your events</p>
           </div>

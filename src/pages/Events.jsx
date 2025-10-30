@@ -82,8 +82,8 @@ const Events = () => {
   return (
     <div className="min-h-screen bg-white ">
       {/* Header */}
-      <header className="bg-lnmiit-maroon text-white py-4 px-24 shadow-md">
-        <div className="container mx-auto flex justify-between items-center">
+      <header className="bg-lnmiit-maroon text-white py-4 px-4 sm:px-8 md:px-24 shadow-md">
+        <div className="container mx-auto flex flex-row justify-between items-center">
           <img src={logo} alt="LNMIIT Logo" className="h-12 md:h-16 bg-white p-2 rounded" />
           <Button
             onClick={() => navigate('/super-admin/login')}
@@ -95,55 +95,38 @@ const Events = () => {
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto pt-8 px-24">
-        <div className="bg-white rounded-lg shadow-sm p-8">
+      <div className="container mx-auto pt-8 px-2 sm:px-4 md:px-8">
+        <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 md:p-8">
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">Events</h2>
-            <p className="text-gray-600">Stay updated with our latest events and activities</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Events</h2>
+            <p className="text-gray-600 text-sm sm:text-base">Stay updated with our latest events and activities</p>
           </div>
-
-        {/* Tabs */}
-        <div className="flex justify-between mb-8 bg-gray-50 p-2 px-4 w-full rounded-full mx-auto border border-gray-200">
-          <button
-            onClick={() => setActiveTab('past')}
-            className={`px-6 py-3 rounded-full font-semibold transition-all flex items-center gap-2 ${
-              activeTab === 'past'
-                ? 'bg-gray-500 text-white shadow-lg'
-                : 'bg-transparent text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Past Events ({past.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('current')}
-            className={`px-6 py-3 rounded-full font-semibold transition-all flex items-center gap-2 ${
-              activeTab === 'current'
-                ? 'bg-green-500 text-white shadow-lg'
-                : 'bg-transparent text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Current Events ({current.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('upcoming')}
-            className={`px-6 py-3 rounded-full font-semibold transition-all flex items-center gap-2 ${
-              activeTab === 'upcoming'
-                ? 'bg-blue-500 text-white shadow-lg'
-                : 'bg-transparent text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-            Upcoming Events ({upcoming.length})
-          </button>
-        </div>
+          {/* Tabs for all screen sizes, smaller on mobile */}
+          <div className="mb-6">
+            <div className="flex justify-between bg-gray-50 p-1 w-full rounded-full mx-auto border border-gray-200 gap-1">
+              <button
+                onClick={() => setActiveTab('past')}
+                className={`flex-1 px-2 py-1.5 rounded-full font-semibold transition-all flex items-center justify-center gap-1 text-xs md:text-sm ${activeTab === 'past' ? 'bg-gray-500 text-white shadow-md' : 'bg-transparent text-gray-600 hover:bg-gray-100'}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Past ({past.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('current')}
+                className={`flex-1 px-2 py-1.5 rounded-full font-semibold transition-all flex items-center justify-center gap-1 text-xs md:text-sm ${activeTab === 'current' ? 'bg-green-500 text-white shadow-md' : 'bg-transparent text-gray-600 hover:bg-gray-100'}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                Current ({current.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('upcoming')}
+                className={`flex-1 px-2 py-1.5 rounded-full font-semibold transition-all flex items-center justify-center gap-1 text-xs md:text-sm ${activeTab === 'upcoming' ? 'bg-blue-500 text-white shadow-md' : 'bg-transparent text-gray-600 hover:bg-gray-100'}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                Upcoming ({upcoming.length})
+              </button>
+            </div>
+          </div>
 
         {/* Events List */}
         {loading ? (

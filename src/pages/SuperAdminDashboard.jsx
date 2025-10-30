@@ -114,53 +114,57 @@ const SuperAdminDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen bg-lnmiit-bg">
+    <div className="flex flex-col md:flex-row h-screen bg-lnmiit-bg">
       {/* Sidebar */}
-      <aside className="w-64 bg-lnmiit-maroon text-white flex flex-col shadow-lg">
-        <div className="p-6 border-b border-white/10 flex flex-col items-center">
-          <img src={logo} alt="LNMIIT Logo" className="h-16 mb-3 bg-white p-2 rounded" />
-          <h2 className="text-lg font-bold text-center">Super Admin Panel</h2>
+      <aside className="w-full md:w-64 bg-lnmiit-maroon text-white flex flex-col shadow-lg flex-shrink-0">
+        <div className="p-4 md:p-6 border-b border-white/10 flex flex-row md:flex-col items-center justify-between md:justify-center">
+          <div className="flex items-center gap-4">
+            <img src={logo} alt="LNMIIT Logo" className="h-12 md:h-16 bg-white p-2 rounded" />
+            <h2 className="text-lg font-bold text-center hidden md:block">Super Admin Panel</h2>
+          </div>
+          {/* Mobile Logout / Simple Header */}
+          <h2 className="text-lg font-bold text-center md:hidden">SA Panel</h2>
         </div>
 
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            <li>
+        <nav className="flex-1 p-2 md:p-4">
+          <ul className="flex flex-row md:flex-col justify-around md:justify-start md:space-y-2">
+            <li className="flex-1 md:flex-none">
               <button
                 onClick={() => setActiveSection('requests')}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 ${
+                className={`w-full text-center md:text-left px-2 py-2 md:px-4 md:py-3 rounded-lg transition-all flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 ${
                   activeSection === 'requests'
                     ? 'bg-lnmiit-gold text-lnmiit-maroon font-semibold'
                     : 'hover:bg-white/10'
                 }`}
               >
                 <CheckCircle className="w-5 h-5" />
-                Admin Requests
+                <span className="text-xs md:text-base">Requests</span>
               </button>
             </li>
-            <li>
+            <li className="flex-1 md:flex-none">
               <button
                 onClick={() => setActiveSection('admins')}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 ${
+                className={`w-full text-center md:text-left px-2 py-2 md:px-4 md:py-3 rounded-lg transition-all flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 ${
                   activeSection === 'admins'
                     ? 'bg-lnmiit-gold text-lnmiit-maroon font-semibold'
                     : 'hover:bg-white/10'
                 }`}
               >
                 <Users className="w-5 h-5" />
-                All Admins
+                <span className="text-xs md:text-base">Admins</span>
               </button>
             </li>
-            <li>
+            <li className="flex-1 md:flex-none">
               <button
                 onClick={() => setActiveSection('create')}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-all flex items-center gap-3 ${
+                className={`w-full text-center md:text-left px-2 py-2 md:px-4 md:py-3 rounded-lg transition-all flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 ${
                   activeSection === 'create'
                     ? 'bg-lnmiit-gold text-lnmiit-maroon font-semibold'
                     : 'hover:bg-white/10'
                 }`}
               >
                 <UserPlus className="w-5 h-5" />
-                Create Admin
+                <span className="text-xs md:text-base">Create</span>
               </button>
             </li>
           </ul>
@@ -171,9 +175,9 @@ const SuperAdminDashboard = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
         <header className="bg-white shadow-sm border-b">
-          <div className="flex items-center justify-between px-8 py-4">
-            <h1 className="text-2xl font-bold text-lnmiit-maroon">
-              Digital Notice Board — Super Admin
+          <div className="flex items-center justify-between px-4 md:px-8 py-3 md:py-4">
+            <h1 className="text-lg md:text-2xl font-bold text-lnmiit-maroon">
+              Digital Notice Board
             </h1>
             <Button
               onClick={handleLogout}
@@ -181,13 +185,13 @@ const SuperAdminDashboard = () => {
               className="flex items-center gap-2"
             >
               <LogOut className="w-4 h-4" />
-              Logout
+              <span className="hidden md:inline">Logout</span>
             </Button>
           </div>
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8">
           {/* Admin Requests Section */}
           {activeSection === 'requests' && (
             <Card>
@@ -291,7 +295,7 @@ const SuperAdminDashboard = () => {
 
           {/* Create Admin Section */}
           {activeSection === 'create' && (
-            <Card className="max-w-2xl">
+            <Card className="max-w-full md:max-w-2xl">
               <CardHeader>
                 <CardTitle className="text-lnmiit-maroon">Create New Admin</CardTitle>
               </CardHeader>

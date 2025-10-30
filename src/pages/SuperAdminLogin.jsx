@@ -50,20 +50,20 @@ const SuperAdminLogin = () => {
       <div className="absolute inset-0 bg-black/40"></div>
       
       {/* Card with higher z-index */}
-      <div className="relative z-10" style={{ width: '500px', maxWidth: '90vw' }}>
+      <div className="relative z-10 w-full max-w-md">
         <Card className="w-full shadow-2xl">
-          <CardHeader className="space-y-2 text-center pt-8 pb-6">
-            <CardTitle className="text-3xl font-bold text-lnmiit-maroon">
+          <CardHeader className="space-y-2 text-center pt-6 md:pt-8 pb-4 md:pb-6">
+            <CardTitle className="text-2xl md:text-3xl font-bold text-lnmiit-maroon">
               Admin Login
             </CardTitle>
             <p className="text-base text-muted-foreground">
               LNMBoard
             </p>
           </CardHeader>
-          <CardContent className="px-8 pb-8">
-            <form onSubmit={handleLogin} className="space-y-6">
+          <CardContent className="px-6 md:px-8 pb-6 md:pb-8">
+            <form onSubmit={handleLogin} className="space-y-4 md:space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-base">Email</Label>
+                <Label htmlFor="email" className="text-sm md:text-base">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -71,12 +71,12 @@ const SuperAdminLogin = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full h-12 text-base"
+                  className="w-full h-10 md:h-12 text-sm md:text-base"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-base">Password</Label>
+                <Label htmlFor="password" className="text-sm md:text-base">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -84,14 +84,14 @@ const SuperAdminLogin = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full h-12 text-base"
+                  className="w-full h-10 md:h-12 text-sm md:text-base"
                 />
               </div>
 
               <Button
                 type="submit"
                 variant="lnmiit"
-                className="w-full h-12 text-base"
+                className="w-full h-10 md:h-12 text-sm md:text-base"
                 disabled={loading}
               >
                 {loading ? 'Logging in...' : 'Login'}
