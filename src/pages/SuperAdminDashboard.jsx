@@ -18,8 +18,7 @@ import { LogOut, Users, UserPlus, CheckCircle } from 'lucide-react';
 import logo from '@/assets/lnmiit-logo.png';
 
 const SuperAdminDashboard = () => {
-  const [activeSection, setActiveSection] = useState('requests');
-  const [adminRequests, setAdminRequests] = useState([]);
+  const [activeSection, setActiveSection] = useState('admins');
   const [allAdmins, setAllAdmins] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
@@ -37,11 +36,9 @@ const SuperAdminDashboard = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [requests, admins] = await Promise.all([
-        superAdminAPI.getAdminRequests(),
+      const [admins] = await Promise.all([
         superAdminAPI.getAllAdmins(),
       ]);
-      setAdminRequests(requests);
       setAllAdmins(admins);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -55,28 +52,6 @@ const SuperAdminDashboard = () => {
     superAdminAPI.logout();
     toast.success('Logged out successfully');
     navigate('/super-admin/login');
-  };
-
-  const handleApprove = async (id) => {
-    try {
-      await superAdminAPI.approveAdmin(id);
-      toast.success('Admin approved successfully');
-      loadData();
-    } catch (error) {
-      console.error('Error approving admin:', error);
-      toast.error(error.response?.data?.message || 'Failed to approve admin');
-    }
-  };
-
-  const handleReject = async (id) => {
-    try {
-      await superAdminAPI.rejectAdmin(id);
-      toast.success('Admin request rejected');
-      loadData();
-    } catch (error) {
-      console.error('Error rejecting admin:', error);
-      toast.error(error.response?.data?.message || 'Failed to reject admin');
-    }
   };
 
   const handleDeleteAdmin = async (id) => {
@@ -117,30 +92,19 @@ const SuperAdminDashboard = () => {
     <div className="flex flex-col md:flex-row h-screen bg-lnmiit-bg">
       {/* Sidebar */}
       <aside className="w-full md:w-64 bg-lnmiit-maroon text-white flex flex-col shadow-lg flex-shrink-0">
-        <div className="p-4 md:p-6 border-b border-white/10 flex flex-row md:flex-col items-center justify-between md:justify-center">
-          <div className="flex items-center gap-4">
-            <img src={logo} alt="LNMIIT Logo" className="h-12 md:h-16 bg-white p-2 rounded" />
-            <h2 className="text-lg font-bold text-center hidden md:block">Super Admin Panel</h2>
-          </div>
-          {/* Mobile Logout / Simple Header */}
-          <h2 className="text-lg font-bold text-center md:hidden">SA Panel</h2>
+        <div className="p-4 md:p-6 border-b border-white/10 flex flex-row items-center justify-between">
+          <img src={logo} alt="LNMIIT Logo" className="h-12 md:h-16 bg-white p-2 rounded" />
+          {/* Show logout button on mobile screens ONLY */}
+          <Button
+            onClick={handleLogout}
+            variant="lnmiit"
+            className="flex items-center gap-2 md:hidden"
+          >
+            <LogOut className="w-5 h-5" />
+          </Button>
         </div>
-
         <nav className="flex-1 p-2 md:p-4">
           <ul className="flex flex-row md:flex-col justify-around md:justify-start md:space-y-2">
-            <li className="flex-1 md:flex-none">
-              <button
-                onClick={() => setActiveSection('requests')}
-                className={`w-full text-center md:text-left px-2 py-2 md:px-4 md:py-3 rounded-lg transition-all flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 ${
-                  activeSection === 'requests'
-                    ? 'bg-lnmiit-gold text-lnmiit-maroon font-semibold'
-                    : 'hover:bg-white/10'
-                }`}
-              >
-                <CheckCircle className="w-5 h-5" />
-                <span className="text-xs md:text-base">Requests</span>
-              </button>
-            </li>
             <li className="flex-1 md:flex-none">
               <button
                 onClick={() => setActiveSection('admins')}
@@ -173,79 +137,24 @@ const SuperAdminDashboard = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar */}
+        
         <header className="bg-white shadow-sm border-b">
           <div className="flex items-center justify-between px-4 md:px-8 py-3 md:py-4">
-            <h1 className="text-lg md:text-2xl font-bold text-lnmiit-maroon">
-              Digital Notice Board
-            </h1>
+            <div className="flex items-center">
+            </div>
+            {/* Show logout button on desktop screens ONLY */}
             <Button
               onClick={handleLogout}
               variant="lnmiit"
-              className="flex items-center gap-2"
+              className="hidden md:flex items-center gap-2"
             >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden md:inline">Logout</span>
+              <LogOut className="w-5 h-5" />
             </Button>
           </div>
         </header>
 
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          {/* Admin Requests Section */}
-          {activeSection === 'requests' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lnmiit-maroon">Pending Admin Requests</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <p>Loading...</p>
-                ) : adminRequests.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No pending requests</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Date Requested</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {adminRequests.map((request) => (
-                          <TableRow key={request._id}>
-                            <TableCell className="font-medium">{request.name}</TableCell>
-                            <TableCell>{request.email}</TableCell>
-                            <TableCell>{formatDate(request.createdAt)}</TableCell>
-                            <TableCell className="text-right space-x-2">
-                              <Button
-                                onClick={() => handleApprove(request._id)}
-                                variant="lnmiit"
-                                size="sm"
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                onClick={() => handleReject(request._id)}
-                                variant="destructive"
-                                size="sm"
-                              >
-                                Reject
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           {/* All Admins Section */}
           {activeSection === 'admins' && (
             <Card>

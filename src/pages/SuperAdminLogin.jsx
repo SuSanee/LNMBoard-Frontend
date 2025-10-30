@@ -98,7 +98,8 @@ const SuperAdminLogin = () => {
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
+            {/* REMOVE registration link from login form */}
+            {/* <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Want to create admin account?{' '}
                 <button
@@ -108,7 +109,7 @@ const SuperAdminLogin = () => {
                   Register here
                 </button>
               </p>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
       </div>
