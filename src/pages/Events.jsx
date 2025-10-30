@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { eventAPI } from '@/api/events';
 import { toast } from 'react-toastify';
+import EventCalendar from '@/components/EventCalendar';
 import logo from '@/assets/lnmiit-logo.png';
 
 const Events = () => {
@@ -12,6 +13,7 @@ const Events = () => {
   const [loading, setLoading] = useState(true);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingEvent, setViewingEvent] = useState(null);
+  const [showCalendar, setShowCalendar] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -87,22 +89,46 @@ const Events = () => {
       <header className="bg-lnmiit-maroon text-white py-4 px-4 sm:px-8 md:px-24 shadow-md">
         <div className="container mx-auto flex flex-row justify-between items-center">
           <img src={logo} alt="LNMIIT Logo" className="h-12 md:h-16 bg-white p-2 rounded" />
-          <Button
-            onClick={() => navigate('/super-admin/login')}
-            className="bg-white text-lnmiit-maroon hover:bg-gray-100"
-          >
-            Login
-          </Button>
+          <div className="flex gap-6 items-center">
+            <button
+              onClick={() => setShowCalendar(true)}
+              className="text-white hover:text-gray-200 font-medium"
+            >
+              Calendar
+            </button>
+            <button
+              onClick={() => setShowCalendar(false)}
+              className="text-white hover:text-gray-200 font-medium"
+            >
+              Events
+            </button>
+            <Button
+              onClick={() => navigate('/super-admin/login')}
+              className="bg-white text-lnmiit-maroon hover:bg-gray-100"
+            >
+              Login
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="container mx-auto pt-8 px-2 sm:px-4 md:px-8">
-        <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 md:p-8">
-          <div className="mb-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Events</h2>
-            <p className="text-gray-600 text-sm sm:text-base">Stay updated with our latest events and activities</p>
+        {showCalendar ? (
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 md:p-8">
+            <div className="mb-4">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">Event Calendar</h2>
+            </div>
+            <div className="flex justify-center">
+              <EventCalendar events={events} onEventClick={(event) => { setViewingEvent(event); setShowViewModal(true); }} />
+            </div>
           </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 md:p-8">
+            <div className="mb-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Events</h2>
+              <p className="text-gray-600 text-sm sm:text-base">Stay updated with our latest events and activities</p>
+            </div>
           {/* Tabs for all screen sizes, smaller on mobile */}
           <div className="mb-6">
             <div className="flex justify-between bg-gray-50 p-1 w-full rounded-full mx-auto border border-gray-200 gap-1">
@@ -164,13 +190,31 @@ const Events = () => {
             ))}
           </div>
         )}
-        </div>
+          </div>
+        )}
 
         {/* View Event Details Modal */}
         {showViewModal && viewingEvent && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowViewModal(false)}>
-            <Card className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
-              <CardHeader>
+            <Card className="w-full max-w-2xl relative" onClick={(e) => e.stopPropagation()}>
+              {/* Close X icon button */}
+              <button
+                className="absolute top-4 right-4 bg-white hover:bg-gray-100 rounded-full p-2 shadow focus:outline-none z-10"
+                aria-label="Close"
+                onClick={() => setShowViewModal(false)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              {viewingEvent.image && (
+                <img 
+                  src={viewingEvent.image} 
+                  alt={viewingEvent.title}
+                  className="w-full max-h-[420px] object-contain mb-6 rounded-t-lg"
+                />
+              )}
+              <CardHeader className="pt-0">
                 <CardTitle className="text-2xl text-lnmiit-maroon">
                   {viewingEvent.title}
                 </CardTitle>
