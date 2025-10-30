@@ -246,10 +246,10 @@ const AdminDashboard = () => {
       {/* View Event Details Modal */}
       {showViewModal && viewingEvent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl relative">
+          <Card className="w-full max-w-md relative">
             {/* Close X icon button */}
             <button
-              className="absolute top-4 right-4 bg-white hover:bg-gray-100 rounded-full p-2 shadow focus:outline-none"
+              className="absolute top-3 right-3 bg-white hover:bg-gray-100 rounded-full p-2 shadow focus:outline-none"
               aria-label="Close"
               onClick={() => setShowViewModal(false)}
             >
@@ -257,42 +257,45 @@ const AdminDashboard = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            {viewingEvent.image && (
-              <img 
-                src={viewingEvent.image} 
-                alt={viewingEvent.title}
-                className="w-full max-h-[420px] object-contain mb-6 rounded-t-lg"
-              />
-            )}
-            <CardHeader className="pt-0">
-              <CardTitle className="text-2xl text-lnmiit-maroon">
-                {viewingEvent.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-600">Date</p>
-                  <p className="text-base font-medium">{formatDate(viewingEvent.eventDate)}</p>
-                </div>
-                {viewingEvent.venue && (
+
+            <div className="max-h-[75vh] overflow-y-auto">
+              {viewingEvent.image && (
+                <img 
+                  src={viewingEvent.image} 
+                  alt={viewingEvent.title}
+                  className="w-full max-h-[240px] object-contain mb-3 rounded-t-lg"
+                />
+              )}
+              <CardHeader className="pt-0 pb-2">
+                <CardTitle className="text-xl text-lnmiit-maroon">
+                  {viewingEvent.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="space-y-3">
                   <div>
-                    <p className="text-sm text-gray-600">Venue</p>
-                    <p className="text-base font-medium">📍 {viewingEvent.venue}</p>
+                    <p className="text-xs text-gray-600">Date</p>
+                    <p className="text-sm font-medium">{formatDate(viewingEvent.eventDate)}</p>
                   </div>
-                )}
-                {viewingEvent.time && (
+                  {viewingEvent.venue && (
+                    <div>
+                      <p className="text-xs text-gray-600">Venue</p>
+                      <p className="text-sm font-medium">📍 {viewingEvent.venue}</p>
+                    </div>
+                  )}
+                  {viewingEvent.time && (
+                    <div>
+                      <p className="text-xs text-gray-600">Time</p>
+                      <p className="text-sm font-medium">🕐 {viewingEvent.time}</p>
+                    </div>
+                  )}
                   <div>
-                    <p className="text-sm text-gray-600">Time</p>
-                    <p className="text-base font-medium">🕐 {viewingEvent.time}</p>
+                    <p className="text-xs text-gray-600">Description</p>
+                    <p className="text-sm">{viewingEvent.description}</p>
                   </div>
-                )}
-                <div>
-                  <p className="text-sm text-gray-600">Description</p>
-                  <p className="text-base">{viewingEvent.description}</p>
                 </div>
-              </div>
-            </CardContent>
+              </CardContent>
+            </div>
           </Card>
         </div>
       )}

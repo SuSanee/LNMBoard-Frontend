@@ -238,10 +238,10 @@ const Events = () => {
         {/* View Event Details Modal */}
         {showViewModal && viewingEvent && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowViewModal(false)}>
-            <Card className="w-full max-w-lg relative" onClick={(e) => e.stopPropagation()}>
+            <Card className="w-full max-w-md relative" onClick={(e) => e.stopPropagation()}>
               {/* Close X icon button */}
               <button
-                className="absolute top-4 right-4 bg-white hover:bg-gray-100 rounded-full p-2 shadow focus:outline-none z-10"
+                className="absolute top-3 right-3 bg-white hover:bg-gray-100 rounded-full p-2 shadow focus:outline-none z-10"
                 aria-label="Close"
                 onClick={() => setShowViewModal(false)}
               >
@@ -249,83 +249,89 @@ const Events = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              {viewingEvent.image && (
-                <img 
-                  src={viewingEvent.image} 
-                  alt={viewingEvent.title}
-                  className="w-full max-h-[300px] object-contain mb-4 rounded-t-lg"
-                />
-              )}
-              <CardHeader className="pt-0">
-                <CardTitle className="text-2xl text-lnmiit-maroon">
-                  {viewingEvent.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="max-h-[70vh] overflow-y-auto">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Date</p>
-                    <p className="text-base font-medium">{formatDate(viewingEvent.eventDate)}</p>
-                  </div>
-                  {viewingEvent.venue && (
-                    <div>
-                      <p className="text-sm text-gray-600">Venue</p>
-                      <p className="text-base font-medium">📍 {viewingEvent.venue}</p>
-                    </div>
-                  )}
-                  {viewingEvent.time && (
-                    <div>
-                      <p className="text-sm text-gray-600">Time</p>
-                      <p className="text-base font-medium">🕐 {viewingEvent.time}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm text-gray-600">Description</p>
-                    <p className="text-base">{viewingEvent.description}</p>
-                  </div>
-                </div>
 
-                {/* Comments Section */}
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Comments ({viewingEvent.comments?.length || 0})</h3>
-                  
-                  {/* Comments List */}
-                  {viewingEvent.comments && viewingEvent.comments.length > 0 && (
-                    <div className="space-y-3 mb-4 max-h-[200px] overflow-y-auto">
-                      {viewingEvent.comments.map((comment, index) => (
-                        <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                          <p className="text-sm text-gray-700">{comment.text}</p>
+              {/* Scrollable content wrapper (image + header + details + comments) */}
+              <div className="max-h-[75vh] overflow-y-auto">
+                {viewingEvent.image && (
+                  <img 
+                    src={viewingEvent.image} 
+                    alt={viewingEvent.title}
+                    className="w-full max-h-[240px] object-contain mb-3 rounded-t-lg"
+                  />
+                )}
+
+                <CardHeader className="pt-0 pb-2">
+                  <CardTitle className="text-xl text-lnmiit-maroon">
+                    {viewingEvent.title}
+                  </CardTitle>
+                </CardHeader>
+
+                <CardContent className="pt-0">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-gray-600">Date</p>
+                      <p className="text-sm font-medium">{formatDate(viewingEvent.eventDate)}</p>
+                    </div>
+                    {viewingEvent.venue && (
+                      <div>
+                        <p className="text-xs text-gray-600">Venue</p>
+                        <p className="text-sm font-medium">📍 {viewingEvent.venue}</p>
+                      </div>
+                    )}
+                    {viewingEvent.time && (
+                      <div>
+                        <p className="text-xs text-gray-600">Time</p>
+                        <p className="text-sm font-medium">🕐 {viewingEvent.time}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs text-gray-600">Description</p>
+                      <p className="text-sm">{viewingEvent.description}</p>
+                    </div>
+
+                    {/* Comments Section */}
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <h3 className="text-base font-semibold text-gray-800 mb-3">Comments ({viewingEvent.comments?.length || 0})</h3>
+                      
+                      {/* Comments List */}
+                      {viewingEvent.comments && viewingEvent.comments.length > 0 && (
+                        <div className="space-y-2 mb-3 max-h-[160px] overflow-y-auto">
+                          {viewingEvent.comments.map((comment, index) => (
+                            <div key={index} className="p-2 bg-gray-50 rounded">
+                              <p className="text-sm text-gray-700">{comment.text}</p>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      )}
 
-                  {/* Comment Form */}
-                  {canComment(viewingEvent.eventDate) ? (
-                    <form onSubmit={handleCommentSubmit} className="space-y-2">
-                      <textarea
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Write a comment..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lnmiit-maroon resize-none"
-                        rows="3"
-                        required
-                      />
-                      <Button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90 text-white"
-                      >
-                        {isSubmitting ? 'Posting...' : 'Post Comment'}
-                      </Button>
-                    </form>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">
-                      Comments can only be added 3 days before or 3 days after the event.
-                    </p>
-                  )}
-                </div>
-              </CardContent>
+                      {/* Comment Form */}
+                      {canComment(viewingEvent.eventDate) ? (
+                        <form onSubmit={handleCommentSubmit} className="space-y-2">
+                          <textarea
+                            value={commentText}
+                            onChange={(e) => setCommentText(e.target.value)}
+                            placeholder="Write a comment..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lnmiit-maroon resize-none"
+                            rows="2"
+                            required
+                          />
+                          <Button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90 text-white"
+                          >
+                            {isSubmitting ? 'Posting...' : 'Post Comment'}
+                          </Button>
+                        </form>
+                      ) : (
+                        <p className="text-xs text-gray-500 italic">
+                          Comments can only be added 3 days before or 3 days after the event.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </div>
             </Card>
           </div>
         )}
