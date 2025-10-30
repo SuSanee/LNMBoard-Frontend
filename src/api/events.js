@@ -53,6 +53,12 @@ export const eventAPI = {
     const response = await api.delete(`/${id}`);
     return response.data;
   },
+
+  // Add comment to event (public, no auth)
+  addComment: async (id, text) => {
+    const response = await axios.post(`${API_URL}/api/events/${id}/comment`, { text });
+    return response.data;
+  },
 };
 
 

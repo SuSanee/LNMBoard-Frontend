@@ -14,6 +14,8 @@ const Events = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingEvent, setViewingEvent] = useState(null);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -79,6 +81,46 @@ const Events = () => {
       month: 'long',
       year: 'numeric',
     });
+  };
+
+  const canComment = (eventDate) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const event = new Date(eventDate);
+    event.setHours(0, 0, 0, 0);
+    
+    const threeDaysBefore = new Date(event);
+    threeDaysBefore.setDate(threeDaysBefore.getDate() - 3);
+    
+    const threeDaysAfter = new Date(event);
+    threeDaysAfter.setDate(threeDaysAfter.getDate() + 3);
+    
+    return today >= threeDaysBefore && today <= threeDaysAfter;
+  };
+
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (!commentText.trim() || !viewingEvent) return;
+    
+    try {
+      setIsSubmitting(true);
+      const response = await eventAPI.addComment(viewingEvent._id, commentText);
+      toast.success('Comment added successfully');
+      setCommentText('');
+      
+      // Update the viewing event with new comments
+      if (response.event) {
+        setViewingEvent(response.event);
+      }
+      
+      // Refresh all events
+      await fetchEvents();
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast.error(error.response?.data?.message || 'Failed to add comment');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const activeEvents = getActiveEvents();
@@ -196,7 +238,7 @@ const Events = () => {
         {/* View Event Details Modal */}
         {showViewModal && viewingEvent && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowViewModal(false)}>
-            <Card className="w-full max-w-2xl relative" onClick={(e) => e.stopPropagation()}>
+            <Card className="w-full max-w-lg relative" onClick={(e) => e.stopPropagation()}>
               {/* Close X icon button */}
               <button
                 className="absolute top-4 right-4 bg-white hover:bg-gray-100 rounded-full p-2 shadow focus:outline-none z-10"
@@ -211,7 +253,7 @@ const Events = () => {
                 <img 
                   src={viewingEvent.image} 
                   alt={viewingEvent.title}
-                  className="w-full max-h-[420px] object-contain mb-6 rounded-t-lg"
+                  className="w-full max-h-[300px] object-contain mb-4 rounded-t-lg"
                 />
               )}
               <CardHeader className="pt-0">
@@ -219,7 +261,7 @@ const Events = () => {
                   {viewingEvent.title}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="max-h-[70vh] overflow-y-auto">
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm text-gray-600">Date</p>
@@ -241,6 +283,47 @@ const Events = () => {
                     <p className="text-sm text-gray-600">Description</p>
                     <p className="text-base">{viewingEvent.description}</p>
                   </div>
+                </div>
+
+                {/* Comments Section */}
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Comments ({viewingEvent.comments?.length || 0})</h3>
+                  
+                  {/* Comments List */}
+                  {viewingEvent.comments && viewingEvent.comments.length > 0 && (
+                    <div className="space-y-3 mb-4 max-h-[200px] overflow-y-auto">
+                      {viewingEvent.comments.map((comment, index) => (
+                        <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                          <p className="text-sm text-gray-700">{comment.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Comment Form */}
+                  {canComment(viewingEvent.eventDate) ? (
+                    <form onSubmit={handleCommentSubmit} className="space-y-2">
+                      <textarea
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="Write a comment..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lnmiit-maroon resize-none"
+                        rows="3"
+                        required
+                      />
+                      <Button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90 text-white"
+                      >
+                        {isSubmitting ? 'Posting...' : 'Post Comment'}
+                      </Button>
+                    </form>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">
+                      Comments can only be added 3 days before or 3 days after the event.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
