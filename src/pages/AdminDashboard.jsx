@@ -14,11 +14,15 @@ const AdminDashboard = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingEvent, setViewingEvent] = useState(null);
   const [editingEvent, setEditingEvent] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     eventDate: '',
+    venue: '',
+    time: '',
     image: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
@@ -68,6 +72,8 @@ const AdminDashboard = () => {
       title: '',
       description: '',
       eventDate: '',
+      venue: '',
+      time: '',
       image: null,
     });
     setImagePreview(null);
@@ -80,6 +86,8 @@ const AdminDashboard = () => {
       title: event.title,
       description: event.description,
       eventDate: new Date(event.eventDate).toISOString().split('T')[0],
+      venue: event.venue || '',
+      time: event.time || '',
       image: event.image || null,
     });
     setImagePreview(event.image || null);
@@ -211,53 +219,23 @@ const AdminDashboard = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map((event) => (
-              <Card key={event._id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl text-lnmiit-maroon">
-                        {event.title}
-                      </CardTitle>
-                      <p className="text-sm text-gray-600 mt-1">{formatDate(event.eventDate)}</p>
-                      <span className={`inline-block mt-2 px-2 py-1 text-xs rounded capitalize ${
-                        event.eventType === 'past' ? 'bg-gray-100 text-gray-800' :
-                        event.eventType === 'current' ? 'bg-green-100 text-green-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {event.eventType}
-                      </span>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEditEvent(event)}
-                        className="text-blue-600 hover:text-blue-800 p-2"
-                        title="Edit"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteEvent(event._id)}
-                        className="text-red-600 hover:text-red-800 p-2"
-                        title="Delete"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
+              <Card key={event._id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => { setViewingEvent(event); setShowViewModal(true); }}>
+                <CardContent className="p-0">
                   {event.image && (
                     <img 
                       src={event.image} 
                       alt={event.title}
-                      className="w-full h-48 object-cover rounded-lg mb-3"
+                      className="w-full h-64 object-cover rounded-t-lg"
                     />
                   )}
-                  <p className="text-gray-700">{event.description}</p>
+                  <div className="p-4">
+                    <CardTitle className="text-xl text-lnmiit-maroon mb-2">
+                      {event.title}
+                    </CardTitle>
+                    <p className="text-sm text-gray-600 mb-1">{formatDate(event.eventDate)}</p>
+                    {event.venue && <p className="text-xs text-gray-500 mb-1">📍 {event.venue}</p>}
+                    {event.time && <p className="text-xs text-gray-500">🕐 {event.time}</p>}
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -265,16 +243,70 @@ const AdminDashboard = () => {
         )}
       </div>
 
+      {/* View Event Details Modal */}
+      {showViewModal && viewingEvent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-2xl relative">
+            {/* Close X icon button */}
+            <button
+              className="absolute top-4 right-4 bg-white hover:bg-gray-100 rounded-full p-2 shadow focus:outline-none"
+              aria-label="Close"
+              onClick={() => setShowViewModal(false)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {viewingEvent.image && (
+              <img 
+                src={viewingEvent.image} 
+                alt={viewingEvent.title}
+                className="w-full max-h-[420px] object-contain mb-6 rounded-t-lg"
+              />
+            )}
+            <CardHeader className="pt-0">
+              <CardTitle className="text-2xl text-lnmiit-maroon">
+                {viewingEvent.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-600">Date</p>
+                  <p className="text-base font-medium">{formatDate(viewingEvent.eventDate)}</p>
+                </div>
+                {viewingEvent.venue && (
+                  <div>
+                    <p className="text-sm text-gray-600">Venue</p>
+                    <p className="text-base font-medium">📍 {viewingEvent.venue}</p>
+                  </div>
+                )}
+                {viewingEvent.time && (
+                  <div>
+                    <p className="text-sm text-gray-600">Time</p>
+                    <p className="text-base font-medium">🕐 {viewingEvent.time}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm text-gray-600">Description</p>
+                  <p className="text-base">{viewingEvent.description}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Add/Edit Event Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl">
+          <Card className="w-full max-w-lg">
             <CardHeader>
               <CardTitle className="text-2xl text-lnmiit-maroon">
                 {editingEvent ? 'Edit Event' : 'Add New Event'}
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="max-h-[70vh] overflow-y-auto">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Event Title</Label>
@@ -309,6 +341,30 @@ const AdminDashboard = () => {
                     onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
                     min={new Date().toISOString().split('T')[0]}
                     required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="venue">Venue</Label>
+                  <Input
+                    id="venue"
+                    type="text"
+                    value={formData.venue}
+                    onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
+                    required
+                    placeholder="Enter event venue"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="time">Time</Label>
+                  <Input
+                    id="time"
+                    type="text"
+                    value={formData.time}
+                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                    required
+                    placeholder="e.g., 10:00 AM - 12:00 PM"
                   />
                 </div>
 

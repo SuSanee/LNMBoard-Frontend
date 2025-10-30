@@ -10,6 +10,8 @@ const Events = () => {
   const [events, setEvents] = useState([]);
   const [activeTab, setActiveTab] = useState('current');
   const [loading, setLoading] = useState(true);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingEvent, setViewingEvent] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -140,30 +142,66 @@ const Events = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activeEvents.map((event) => (
-              <Card key={event._id} className="hover:shadow-lg transition-shadow">
-                {event.image && (
-                  <div className="w-full h-48 overflow-hidden">
+              <Card key={event._id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => { setViewingEvent(event); setShowViewModal(true); }}>
+                <CardContent className="p-0">
+                  {event.image && (
                     <img 
                       src={event.image} 
                       alt={event.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-64 object-cover rounded-t-lg"
                     />
+                  )}
+                  <div className="p-4">
+                    <CardTitle className="text-xl text-lnmiit-maroon mb-2">
+                      {event.title}
+                    </CardTitle>
+                    <p className="text-sm text-gray-600 mb-1">{formatDate(event.eventDate)}</p>
+                    {event.venue && <p className="text-xs text-gray-500 mb-1">📍 {event.venue}</p>}
+                    {event.time && <p className="text-xs text-gray-500">🕐 {event.time}</p>}
                   </div>
-                )}
-                <CardHeader>
-                  <CardTitle className="text-xl text-lnmiit-maroon">
-                    {event.title}
-                  </CardTitle>
-                  <p className="text-sm text-gray-600">{formatDate(event.eventDate)}</p>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-700">{event.description}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
         </div>
+
+        {/* View Event Details Modal */}
+        {showViewModal && viewingEvent && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowViewModal(false)}>
+            <Card className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+              <CardHeader>
+                <CardTitle className="text-2xl text-lnmiit-maroon">
+                  {viewingEvent.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Date</p>
+                    <p className="text-base font-medium">{formatDate(viewingEvent.eventDate)}</p>
+                  </div>
+                  {viewingEvent.venue && (
+                    <div>
+                      <p className="text-sm text-gray-600">Venue</p>
+                      <p className="text-base font-medium">📍 {viewingEvent.venue}</p>
+                    </div>
+                  )}
+                  {viewingEvent.time && (
+                    <div>
+                      <p className="text-sm text-gray-600">Time</p>
+                      <p className="text-base font-medium">🕐 {viewingEvent.time}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm text-gray-600">Description</p>
+                    <p className="text-base">{viewingEvent.description}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );

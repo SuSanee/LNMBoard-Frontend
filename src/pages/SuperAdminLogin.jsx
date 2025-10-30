@@ -54,7 +54,7 @@ const SuperAdminLogin = () => {
         <Card className="w-full shadow-2xl">
           <CardHeader className="space-y-2 text-center pt-6 md:pt-8 pb-4 md:pb-6">
             <CardTitle className="text-2xl md:text-3xl font-bold text-lnmiit-maroon">
-              Admin Login
+              Login
             </CardTitle>
             <p className="text-base text-muted-foreground">
               LNMBoard
