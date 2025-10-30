@@ -26,6 +26,8 @@ const AdminDashboard = () => {
     image: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [timeStart, setTimeStart] = useState('');
+  const [timeEnd, setTimeEnd] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -77,6 +79,8 @@ const AdminDashboard = () => {
       image: null,
     });
     setImagePreview(null);
+    setTimeStart('');
+    setTimeEnd('');
     setShowAddModal(true);
   };
 
@@ -91,6 +95,26 @@ const AdminDashboard = () => {
       image: event.image || null,
     });
     setImagePreview(event.image || null);
+    // Try to prefill start/end from saved time string
+    if (event.time && event.time.includes('-')) {
+      const [s, e] = event.time.split('-').map((t) => t.trim());
+      // Convert 12h to 24h HH:MM if needed
+      const to24 = (str) => {
+        const m = str.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+        if (!m) return '';
+        let h = parseInt(m[1], 10);
+        const min = m[2];
+        const ampm = (m[3] || '').toUpperCase();
+        if (ampm === 'PM' && h < 12) h += 12;
+        if (ampm === 'AM' && h === 12) h = 0;
+        return `${String(h).padStart(2, '0')}:${min}`;
+      };
+      setTimeStart(to24(s));
+      setTimeEnd(to24(e));
+    } else {
+      setTimeStart('');
+      setTimeEnd('');
+    }
     setShowAddModal(true);
   };
 
@@ -143,11 +167,24 @@ const AdminDashboard = () => {
     e.preventDefault();
 
     try {
+      // Build formatted time string like "10:00 AM - 12:00 PM"
+      const format12h = (hhmm) => {
+        if (!hhmm) return '';
+        const [hStr, m] = hhmm.split(':');
+        let h = parseInt(hStr, 10);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        if (h === 0) h = 12;
+        return `${h}:${m} ${ampm}`;
+      };
+      const combinedTime = timeStart && timeEnd ? `${format12h(timeStart)} - ${format12h(timeEnd)}` : formData.time;
+      const payload = { ...formData, time: combinedTime };
+
       if (editingEvent) {
-        await eventAPI.updateEvent(editingEvent._id, formData);
+        await eventAPI.updateEvent(editingEvent._id, payload);
         toast.success('Event updated successfully');
       } else {
-        await eventAPI.createEvent(formData);
+        await eventAPI.createEvent(payload);
         toast.success('Event created successfully');
       }
       setShowAddModal(false);
@@ -360,15 +397,30 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="time">Time</Label>
-                  <Input
-                    id="time"
-                    type="text"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    required
-                    placeholder="e.g., 10:00 AM - 12:00 PM"
-                  />
+                  <Label>Time</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label htmlFor="timeStart" className="text-xs text-gray-600">Start</Label>
+                      <Input
+                        id="timeStart"
+                        type="time"
+                        value={timeStart}
+                        onChange={(e) => setTimeStart(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="timeEnd" className="text-xs text-gray-600">End</Label>
+                      <Input
+                        id="timeEnd"
+                        type="time"
+                        value={timeEnd}
+                        onChange={(e) => setTimeEnd(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">Times are interpreted in IST.</p>
                 </div>
 
                 <div className="space-y-2">
