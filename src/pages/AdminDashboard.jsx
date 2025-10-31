@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { superAdminAPI } from '@/api/superAdmin';
+import { accountAPI } from '@/api/account';
 import { eventAPI } from '@/api/events';
 import { toast } from 'react-toastify';
 import logo from '@/assets/lnmiit-logo.png';
@@ -19,6 +20,9 @@ const AdminDashboard = () => {
   const [editingEvent, setEditingEvent] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [showChangePwd, setShowChangePwd] = useState(false);
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdForm, setPwdForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -68,6 +72,30 @@ const AdminDashboard = () => {
   const handleLogout = () => {
     superAdminAPI.logout();
     navigate('/');
+  };
+
+  const submitChangePassword = async (e) => {
+    e.preventDefault();
+    if (pwdForm.newPassword !== pwdForm.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (pwdForm.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    try {
+      setPwdLoading(true);
+      await accountAPI.changePassword(pwdForm.currentPassword, pwdForm.newPassword, pwdForm.confirmPassword);
+      toast.success('Password updated successfully');
+      setShowChangePwd(false);
+      setPwdForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      console.error('Change password error:', error);
+      toast.error(error.response?.data?.message || 'Failed to change password');
+    } finally {
+      setPwdLoading(false);
+    }
   };
 
   const handleAddEvent = () => {
@@ -220,12 +248,20 @@ const AdminDashboard = () => {
       <header className="bg-lnmiit-maroon text-white py-4 px-4 sm:px-6 shadow-md">
         <div className="container mx-auto flex flex-row justify-between items-center">
           <img src={logo} alt="LNMIIT Logo" className="h-12 md:h-16 bg-white p-2 rounded" />
-          <Button 
-            onClick={handleLogout}
-            className="bg-white text-lnmiit-maroon hover:bg-gray-100"
-          >
-            Logout
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowChangePwd(true)}
+              className="bg-white text-lnmiit-maroon hover:bg-gray-100"
+            >
+              Change Password
+            </Button>
+            <Button 
+              onClick={handleLogout}
+              className="bg-white text-lnmiit-maroon hover:bg-gray-100"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -530,6 +566,38 @@ const AdminDashboard = () => {
                 <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
                 <Button variant="destructive" onClick={handleDeleteEvent}>Delete</Button>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {showChangePwd && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowChangePwd(false)}>
+          <Card className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <CardHeader>
+              <CardTitle className="text-lg">Change Password</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={submitChangePassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Input id="currentPassword" type="password" value={pwdForm.currentPassword} onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input id="newPassword" type="password" value={pwdForm.newPassword} onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })} required minLength={6} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Input id="confirmPassword" type="password" value={pwdForm.confirmPassword} onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })} required />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setShowChangePwd(false)}>Cancel</Button>
+                  <Button type="submit" disabled={pwdLoading} className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90 text-white">
+                    {pwdLoading ? 'Updating...' : 'Update Password'}
+                  </Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </div>
