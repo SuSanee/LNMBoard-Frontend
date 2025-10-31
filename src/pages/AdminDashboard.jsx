@@ -17,6 +17,8 @@ const AdminDashboard = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingEvent, setViewingEvent] = useState(null);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -148,14 +150,18 @@ const AdminDashboard = () => {
     setImagePreview(null);
   };
 
-  const handleDeleteEvent = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this event?')) {
-      return;
-    }
+  const handleRequestDelete = (id) => {
+    setDeleteTargetId(id);
+    setShowDeleteModal(true);
+  };
 
+  const handleDeleteEvent = async () => {
+    if (!deleteTargetId) return;
     try {
-      await eventAPI.deleteEvent(id);
+      await eventAPI.deleteEvent(deleteTargetId);
       toast.success('Event deleted successfully');
+      setShowDeleteModal(false);
+      setDeleteTargetId(null);
       fetchEvents();
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -256,7 +262,35 @@ const AdminDashboard = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map((event) => (
-              <Card key={event._id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => { setViewingEvent(event); setShowViewModal(true); }}>
+              <Card key={event._id} className="hover:shadow-lg transition-shadow cursor-pointer relative" onClick={() => { setViewingEvent(event); setShowViewModal(true); }}>
+                {/* Edit/Delete actions */}
+                <div className="absolute top-2 right-2 z-10 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleEditEvent(event); }}
+                    className="bg-white/90 hover:bg-white text-gray-700 hover:text-lnmiit-maroon border border-gray-200 rounded-full p-2 shadow"
+                    aria-label="Edit event"
+                    title="Edit"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                      <path d="M21.731 2.269a2.625 2.625 0 00-3.714 0l-1.214 1.214 3.714 3.714 1.214-1.214a2.625 2.625 0 000-3.714z" />
+                      <path d="M3 17.25V21h3.75L19.092 8.658l-3.714-3.714L3 17.25z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleRequestDelete(event._id); }}
+                    className="bg-white/90 hover:bg-white text-gray-700 hover:text-red-600 border border-gray-200 rounded-full p-2 shadow"
+                    aria-label="Delete event"
+                    title="Delete"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                      <path d="M9 3a1 1 0 00-1 1v1H5.5a1 1 0 000 2h13a1 1 0 100-2H16V4a1 1 0 00-1-1H9z" />
+                      <path d="M6 9a1 1 0 011 1v8a2 2 0 002 2h6a2 2 0 002-2v-8a1 1 0 112 0v8a4 4 0 01-4 4H9a4 4 0 01-4-4v-8a1 1 0 011-1z" />
+                      <path d="M10 11a1 1 0 011 1v6a1 1 0 11-2 0v-6a1 1 0 011-1zm4 0a1 1 0 011 1v6a1 1 0 11-2 0v-6a1 1 0 011-1z" />
+                    </svg>
+                  </button>
+                </div>
                 <CardContent className="p-0">
                   {event.image && (
                     <img 
@@ -420,7 +454,6 @@ const AdminDashboard = () => {
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500">Times are interpreted in IST.</p>
                 </div>
 
                 <div className="space-y-2">
@@ -480,6 +513,23 @@ const AdminDashboard = () => {
                   </Button>
                 </div>
               </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowDeleteModal(false)}>
+          <Card className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <CardHeader>
+              <CardTitle className="text-lg">Confirm Deletion</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-700 mb-4">Are you sure you want to delete this event? This action cannot be undone.</p>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+                <Button variant="destructive" onClick={handleDeleteEvent}>Delete</Button>
+              </div>
             </CardContent>
           </Card>
         </div>
