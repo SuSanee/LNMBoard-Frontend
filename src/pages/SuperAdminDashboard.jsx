@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { superAdminAPI } from '@/api/superAdmin';
+import { accountAPI } from '@/api/account';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,9 @@ const SuperAdminDashboard = () => {
   const [allAdmins, setAllAdmins] = useState([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [showChangePwd, setShowChangePwd] = useState(false);
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdForm, setPwdForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,6 +56,30 @@ const SuperAdminDashboard = () => {
     superAdminAPI.logout();
     toast.success('Logged out successfully');
     navigate('/super-admin/login');
+  };
+
+  const submitChangePassword = async (e) => {
+    e.preventDefault();
+    if (pwdForm.newPassword !== pwdForm.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (pwdForm.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    try {
+      setPwdLoading(true);
+      await accountAPI.changePassword(pwdForm.currentPassword, pwdForm.newPassword, pwdForm.confirmPassword);
+      toast.success('Password updated successfully');
+      setShowChangePwd(false);
+      setPwdForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      console.error('Change password error:', error);
+      toast.error(error.response?.data?.message || 'Failed to change password');
+    } finally {
+      setPwdLoading(false);
+    }
   };
 
   const handleDeleteAdmin = async (id) => {
@@ -94,14 +122,23 @@ const SuperAdminDashboard = () => {
       <aside className="w-full md:w-64 bg-lnmiit-maroon text-white flex flex-col shadow-lg flex-shrink-0">
         <div className="p-4 md:p-6 border-b border-white/10 flex flex-row items-center justify-between">
           <img src={logo} alt="LNMIIT Logo" className="h-12 md:h-16 bg-white p-2 rounded" />
-          {/* Show logout button on mobile screens ONLY */}
-          <Button
-            onClick={handleLogout}
-            variant="lnmiit"
-            className="flex items-center gap-2 md:hidden"
-          >
-            <LogOut className="w-5 h-5" />
-          </Button>
+          {/* Mobile actions */}
+          <div className="flex items-center gap-2 md:hidden">
+            <Button
+              onClick={() => setShowChangePwd(true)}
+              variant="lnmiit"
+              className="flex items-center gap-2"
+            >
+              Change Password
+            </Button>
+            <Button
+              onClick={handleLogout}
+              variant="lnmiit"
+              className="flex items-center gap-2"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
         <nav className="flex-1 p-2 md:p-4">
           <ul className="flex flex-row md:flex-col justify-around md:justify-start md:space-y-2">
@@ -142,14 +179,23 @@ const SuperAdminDashboard = () => {
           <div className="flex items-center justify-between px-4 md:px-8 py-3 md:py-4">
             <div className="flex items-center">
             </div>
-            {/* Show logout button on desktop screens ONLY */}
-            <Button
-              onClick={handleLogout}
-              variant="lnmiit"
-              className="hidden md:flex items-center gap-2"
-            >
-              <LogOut className="w-5 h-5" />
-            </Button>
+            {/* Desktop actions */}
+            <div className="hidden md:flex items-center gap-2">
+              <Button
+                onClick={() => setShowChangePwd(true)}
+                variant="lnmiit"
+                className="items-center gap-2"
+              >
+                Change Password
+              </Button>
+              <Button
+                onClick={handleLogout}
+                variant="lnmiit"
+                className="items-center gap-2"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -255,9 +301,43 @@ const SuperAdminDashboard = () => {
           )}
         </main>
       </div>
+
+      {showChangePwd && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowChangePwd(false)}>
+          <Card className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <CardHeader>
+              <CardTitle className="text-lg">Change Password</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={submitChangePassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Input id="currentPassword" type="password" value={pwdForm.currentPassword} onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input id="newPassword" type="password" value={pwdForm.newPassword} onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })} required minLength={6} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                  <Input id="confirmPassword" type="password" value={pwdForm.confirmPassword} onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })} required />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setShowChangePwd(false)}>Cancel</Button>
+                  <Button type="submit" disabled={pwdLoading} className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90 text-white">{pwdLoading ? 'Updating...' : 'Update Password'}</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
+
+// Change Password Modal
+// Placed after component return to keep component export default at bottom
+// Rendered conditionally below
 
 export default SuperAdminDashboard;
 
