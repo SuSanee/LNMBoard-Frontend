@@ -9,6 +9,7 @@ import { accountAPI } from '@/api/account';
 import { eventAPI } from '@/api/events';
 import { toast } from 'react-toastify';
 import logo from '@/assets/lnmiit-logo.png';
+import ExpandableText from '@/components/ExpandableText';
 
 const AdminDashboard = () => {
   const [admin, setAdmin] = useState(null);
@@ -30,6 +31,7 @@ const AdminDashboard = () => {
     venue: '',
     time: '',
     image: null,
+    type: 'event',
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [timeStart, setTimeStart] = useState('');
@@ -107,6 +109,7 @@ const AdminDashboard = () => {
       venue: '',
       time: '',
       image: null,
+      type: 'event',
     });
     setImagePreview(null);
     setTimeStart('');
@@ -123,6 +126,7 @@ const AdminDashboard = () => {
       venue: event.venue || '',
       time: event.time || '',
       image: event.image || null,
+      type: event.type || 'event',
     });
     setImagePreview(event.image || null);
     // Try to prefill start/end from saved time string
@@ -269,14 +273,14 @@ const AdminDashboard = () => {
       <div className="container mx-auto py-8 px-2 sm:px-4 md:px-8">
         <div className="flex flex-row justify-between items-center mb-8">
           <div className="text-left">
-            <h2 className="text-3xl font-bold text-gray-800">My Events</h2>
-            <p className="text-gray-600">Manage your events</p>
+            <h2 className="text-3xl font-bold text-gray-800">My Events/Notices</h2>
+            <p className="text-gray-600">Manage your events and notices</p>
           </div>
           <Button
             onClick={handleAddEvent}
             className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90 text-white"
           >
-            + Add Event
+            + Add
           </Button>
         </div>
 
@@ -287,12 +291,12 @@ const AdminDashboard = () => {
           </div>
         ) : events.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No events created yet</p>
+            <p className="text-gray-600 text-lg">No events or notices created yet</p>
             <Button
               onClick={handleAddEvent}
               className="mt-4 bg-lnmiit-maroon hover:bg-lnmiit-maroon/90"
             >
-              Create Your First Event
+              Create Your First Event/Notice
             </Button>
           </div>
         ) : (
@@ -336,12 +340,18 @@ const AdminDashboard = () => {
                     />
                   )}
                   <div className="p-4">
-                    <CardTitle className="text-xl text-lnmiit-maroon mb-2">
-                      {event.title}
-                    </CardTitle>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CardTitle className="text-xl text-lnmiit-maroon">
+                        {event.title}
+                      </CardTitle>
+                      <span className={`text-xs px-2 py-1 rounded ${event.type === 'notice' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                        {event.type === 'notice' ? 'Notice' : 'Event'}
+                      </span>
+                    </div>
                     <p className="text-sm text-gray-600 mb-1">{formatDate(event.eventDate)}</p>
                     {event.venue && <p className="text-xs text-gray-500 mb-1">📍 {event.venue}</p>}
-                    {event.time && <p className="text-xs text-gray-500">🕐 {event.time}</p>}
+                    {event.time && <p className="text-xs text-gray-500 mb-2">🕐 {event.time}</p>}
+                    <ExpandableText text={event.description} lines={2} />
                   </div>
                 </CardContent>
               </Card>
@@ -413,13 +423,40 @@ const AdminDashboard = () => {
           <Card className="w-full max-w-lg">
             <CardHeader>
               <CardTitle className="text-2xl text-lnmiit-maroon">
-                {editingEvent ? 'Edit Event' : 'Add New Event'}
+                {editingEvent ? 'Edit Event/Notice' : 'Add New Event/Notice'}
               </CardTitle>
             </CardHeader>
             <CardContent className="max-h-[70vh] overflow-y-auto">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Event Title</Label>
+                  <Label>Type</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="type"
+                        value="event"
+                        checked={formData.type === 'event'}
+                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                        className="w-4 h-4"
+                      />
+                      <span>Event</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="type"
+                        value="notice"
+                        checked={formData.type === 'notice'}
+                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                        className="w-4 h-4"
+                      />
+                      <span>Notice</span>
+                    </label>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="title">{formData.type === 'notice' ? 'Notice Title' : 'Event Title'}</Label>
                   <Input
                     id="title"
                     type="text"
@@ -545,7 +582,7 @@ const AdminDashboard = () => {
                     type="submit"
                     className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90"
                   >
-                    {editingEvent ? 'Update Event' : 'Create Event'}
+                    {editingEvent ? 'Update' : 'Create'}
                   </Button>
                 </div>
               </form>

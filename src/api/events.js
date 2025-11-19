@@ -25,8 +25,9 @@ api.interceptors.request.use((config) => {
 // Event API functions
 export const eventAPI = {
   // Get all events (public)
-  getAllEvents: async () => {
-    const response = await api.get('/');
+  getAllEvents: async (type) => {
+    const url = type ? `/?type=${type}` : '/';
+    const response = await api.get(url);
     return response.data;
   },
 
