@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { superAdminAPI } from '@/api/superAdmin';
-import { accountAPI } from '@/api/account';
-import { eventAPI } from '@/api/events';
-import { toast } from 'react-toastify';
-import logo from '@/assets/lnmiit-logo.png';
-import ExpandableText from '@/components/ExpandableText';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { superAdminAPI } from "@/api/superAdmin";
+import { accountAPI } from "@/api/account";
+import { eventAPI } from "@/api/events";
+import { noticeAPI } from "@/api/notices";
+import { uploadAPI } from "@/api/upload";
+import { toast } from "react-toastify";
+import logo from "@/assets/lnmiit-logo.png";
+import ExpandableText from "@/components/ExpandableText";
 
 const AdminDashboard = () => {
   const [admin, setAdmin] = useState(null);
@@ -23,34 +25,41 @@ const AdminDashboard = () => {
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [showChangePwd, setShowChangePwd] = useState(false);
   const [pwdLoading, setPwdLoading] = useState(false);
-  const [pwdForm, setPwdForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [pwdForm, setPwdForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    eventDate: '',
-    venue: '',
-    time: '',
+    title: "",
+    description: "",
+    eventDate: "",
+    venue: "",
+    time: "",
     image: null,
-    type: 'event',
+    type: "event",
   });
   const [imagePreview, setImagePreview] = useState(null);
-  const [timeStart, setTimeStart] = useState('');
-  const [timeEnd, setTimeEnd] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePublicId, setImagePublicId] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [timeStart, setTimeStart] = useState("");
+  const [timeEnd, setTimeEnd] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     // Check if logged in
     if (!superAdminAPI.isAuthenticated()) {
-      navigate('/super-admin/login');
+      navigate("/super-admin/login");
       return;
     }
 
     // Get current admin
     const currentAdmin = superAdminAPI.getCurrentAdmin();
-    
+
     // Verify role is admin (not super-admin)
-    if (!currentAdmin || currentAdmin.role !== 'admin') {
-      navigate('/super-admin/login');
+    if (!currentAdmin || currentAdmin.role !== "admin") {
+      navigate("/super-admin/login");
       return;
     }
 
@@ -61,11 +70,19 @@ const AdminDashboard = () => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const data = await eventAPI.getMyEvents();
-      setEvents(data);
+      // Fetch both events and notices
+      const [eventsData, noticesData] = await Promise.all([
+        eventAPI.getMyEvents(),
+        noticeAPI.getMyNotices(),
+      ]);
+      // Combine and sort by creation date
+      const combined = [...eventsData, ...noticesData].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      setEvents(combined);
     } catch (error) {
-      console.error('Error fetching events:', error);
-      toast.error('Failed to load events');
+      console.error("Error fetching events:", error);
+      toast.error("Failed to load events");
     } finally {
       setLoading(false);
     }
@@ -73,28 +90,32 @@ const AdminDashboard = () => {
 
   const handleLogout = () => {
     superAdminAPI.logout();
-    navigate('/');
+    navigate("/");
   };
 
   const submitChangePassword = async (e) => {
     e.preventDefault();
     if (pwdForm.newPassword !== pwdForm.confirmPassword) {
-      toast.error('New passwords do not match');
+      toast.error("New passwords do not match");
       return;
     }
     if (pwdForm.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error("Password must be at least 6 characters");
       return;
     }
     try {
       setPwdLoading(true);
-      await accountAPI.changePassword(pwdForm.currentPassword, pwdForm.newPassword, pwdForm.confirmPassword);
-      toast.success('Password updated successfully');
+      await accountAPI.changePassword(
+        pwdForm.currentPassword,
+        pwdForm.newPassword,
+        pwdForm.confirmPassword
+      );
+      toast.success("Password updated successfully");
       setShowChangePwd(false);
-      setPwdForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPwdForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (error) {
-      console.error('Change password error:', error);
-      toast.error(error.response?.data?.message || 'Failed to change password');
+      console.error("Change password error:", error);
+      toast.error(error.response?.data?.message || "Failed to change password");
     } finally {
       setPwdLoading(false);
     }
@@ -103,17 +124,18 @@ const AdminDashboard = () => {
   const handleAddEvent = () => {
     setEditingEvent(null);
     setFormData({
-      title: '',
-      description: '',
-      eventDate: '',
-      venue: '',
-      time: '',
+      title: "",
+      description: "",
+      eventDate: "",
+      venue: "",
+      time: "",
       image: null,
-      type: 'event',
+      type: "event",
     });
     setImagePreview(null);
-    setTimeStart('');
-    setTimeEnd('');
+    setImagePublicId(null);
+    setTimeStart("");
+    setTimeEnd("");
     setShowAddModal(true);
   };
 
@@ -122,64 +144,89 @@ const AdminDashboard = () => {
     setFormData({
       title: event.title,
       description: event.description,
-      eventDate: new Date(event.eventDate).toISOString().split('T')[0],
-      venue: event.venue || '',
-      time: event.time || '',
+      eventDate: new Date(event.eventDate).toISOString().split("T")[0],
+      venue: event.venue || "",
+      time: event.time || "",
       image: event.image || null,
-      type: event.type || 'event',
+      type: event.type || "event",
     });
     setImagePreview(event.image || null);
     // Try to prefill start/end from saved time string
-    if (event.time && event.time.includes('-')) {
-      const [s, e] = event.time.split('-').map((t) => t.trim());
+    if (event.time && event.time.includes("-")) {
+      const [s, e] = event.time.split("-").map((t) => t.trim());
       // Convert 12h to 24h HH:MM if needed
       const to24 = (str) => {
         const m = str.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-        if (!m) return '';
+        if (!m) return "";
         let h = parseInt(m[1], 10);
         const min = m[2];
-        const ampm = (m[3] || '').toUpperCase();
-        if (ampm === 'PM' && h < 12) h += 12;
-        if (ampm === 'AM' && h === 12) h = 0;
-        return `${String(h).padStart(2, '0')}:${min}`;
+        const ampm = (m[3] || "").toUpperCase();
+        if (ampm === "PM" && h < 12) h += 12;
+        if (ampm === "AM" && h === 12) h = 0;
+        return `${String(h).padStart(2, "0")}:${min}`;
       };
       setTimeStart(to24(s));
       setTimeEnd(to24(e));
     } else {
-      setTimeStart('');
-      setTimeEnd('');
+      setTimeStart("");
+      setTimeEnd("");
     }
     setShowAddModal(true);
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file');
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select an image file");
         return;
       }
 
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size should be less than 5MB');
+        toast.error("Image size should be less than 5MB");
         return;
       }
 
-      // Convert to base64
+      // Show preview immediately
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({ ...formData, image: reader.result });
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
+
+      // Upload to Cloudinary
+      try {
+        setUploadingImage(true);
+        const result = await uploadAPI.uploadImage(file);
+        setFormData({ ...formData, image: result.url });
+        setImagePublicId(result.publicId);
+        toast.success("Image uploaded successfully");
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        const errorMessage =
+          error.message || "Failed to upload image. Please try again.";
+        toast.error(errorMessage);
+        setImagePreview(null);
+      } finally {
+        setUploadingImage(false);
+      }
     }
   };
 
-  const handleRemoveImage = () => {
+  const handleRemoveImage = async () => {
+    // Delete from Cloudinary if it was uploaded
+    if (imagePublicId) {
+      try {
+        await uploadAPI.deleteImage(imagePublicId);
+      } catch (error) {
+        console.error("Error deleting image:", error);
+      }
+    }
     setFormData({ ...formData, image: null });
     setImagePreview(null);
+    setImagePublicId(null);
   };
 
   const handleRequestDelete = (id) => {
@@ -190,55 +237,93 @@ const AdminDashboard = () => {
   const handleDeleteEvent = async () => {
     if (!deleteTargetId) return;
     try {
-      await eventAPI.deleteEvent(deleteTargetId);
-      toast.success('Event deleted successfully');
+      // Find the event to determine its type
+      const item = events.find((e) => e._id === deleteTargetId);
+      if (item) {
+        if (item.type === "notice") {
+          await noticeAPI.deleteNotice(deleteTargetId);
+          toast.success("Notice deleted successfully");
+        } else {
+          await eventAPI.deleteEvent(deleteTargetId);
+          toast.success("Event deleted successfully");
+        }
+      }
       setShowDeleteModal(false);
       setDeleteTargetId(null);
       fetchEvents();
     } catch (error) {
-      console.error('Error deleting event:', error);
-      toast.error('Failed to delete event');
+      console.error("Error deleting:", error);
+      toast.error("Failed to delete");
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      // Build formatted time string like "10:00 AM - 12:00 PM"
-      const format12h = (hhmm) => {
-        if (!hhmm) return '';
-        const [hStr, m] = hhmm.split(':');
-        let h = parseInt(hStr, 10);
-        const ampm = h >= 12 ? 'PM' : 'AM';
-        h = h % 12;
-        if (h === 0) h = 12;
-        return `${h}:${m} ${ampm}`;
-      };
-      const combinedTime = timeStart && timeEnd ? `${format12h(timeStart)} - ${format12h(timeEnd)}` : formData.time;
-      const payload = { ...formData, time: combinedTime };
+    // Prevent multiple submissions
+    if (isSubmitting) return;
 
-      if (editingEvent) {
-        await eventAPI.updateEvent(editingEvent._id, payload);
-        toast.success('Event updated successfully');
+    try {
+      setIsSubmitting(true);
+
+      let payload;
+
+      if (formData.type === "notice") {
+        // For notices, only include title, description, and image
+        payload = {
+          title: formData.title,
+          description: formData.description,
+          image: formData.image,
+        };
+
+        if (editingEvent) {
+          await noticeAPI.updateNotice(editingEvent._id, payload);
+          toast.success("Notice updated successfully");
+        } else {
+          await noticeAPI.createNotice(payload);
+          toast.success("Notice created successfully");
+        }
       } else {
-        await eventAPI.createEvent(payload);
-        toast.success('Event created successfully');
+        // For events, include all fields
+        const format12h = (hhmm) => {
+          if (!hhmm) return "";
+          const [hStr, m] = hhmm.split(":");
+          let h = parseInt(hStr, 10);
+          const ampm = h >= 12 ? "PM" : "AM";
+          h = h % 12;
+          if (h === 0) h = 12;
+          return `${h}:${m} ${ampm}`;
+        };
+        const combinedTime =
+          timeStart && timeEnd
+            ? `${format12h(timeStart)} - ${format12h(timeEnd)}`
+            : formData.time;
+        payload = { ...formData, time: combinedTime };
+
+        if (editingEvent) {
+          await eventAPI.updateEvent(editingEvent._id, payload);
+          toast.success("Event updated successfully");
+        } else {
+          await eventAPI.createEvent(payload);
+          toast.success("Event created successfully");
+        }
       }
       setShowAddModal(false);
       fetchEvents();
     } catch (error) {
-      console.error('Error saving event:', error);
-      toast.error('Failed to save event');
+      console.error("Error saving event:", error);
+      toast.error("Failed to save event");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
+    return date.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
     });
   };
 
@@ -251,15 +336,19 @@ const AdminDashboard = () => {
       {/* LNMIIT Header */}
       <header className="bg-lnmiit-maroon text-white py-4 px-4 sm:px-6 shadow-md">
         <div className="container mx-auto flex flex-row justify-between items-center">
-          <img src={logo} alt="LNMIIT Logo" className="h-12 md:h-16 bg-white p-2 rounded" />
+          <img
+            src={logo}
+            alt="LNMIIT Logo"
+            className="h-12 md:h-16 bg-white p-2 rounded"
+          />
           <div className="flex gap-2">
-            <Button 
+            <Button
               onClick={() => setShowChangePwd(true)}
               className="bg-white text-lnmiit-maroon hover:bg-gray-100"
             >
               Change Password
             </Button>
-            <Button 
+            <Button
               onClick={handleLogout}
               className="bg-white text-lnmiit-maroon hover:bg-gray-100"
             >
@@ -273,7 +362,9 @@ const AdminDashboard = () => {
       <div className="container mx-auto py-8 px-2 sm:px-4 md:px-8">
         <div className="flex flex-row justify-between items-center mb-8">
           <div className="text-left">
-            <h2 className="text-3xl font-bold text-gray-800">My Events/Notices</h2>
+            <h2 className="text-3xl font-bold text-gray-800">
+              My Events/Notices
+            </h2>
             <p className="text-gray-600">Manage your events and notices</p>
           </div>
           <Button
@@ -291,7 +382,9 @@ const AdminDashboard = () => {
           </div>
         ) : events.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No events or notices created yet</p>
+            <p className="text-gray-600 text-lg">
+              No events or notices created yet
+            </p>
             <Button
               onClick={handleAddEvent}
               className="mt-4 bg-lnmiit-maroon hover:bg-lnmiit-maroon/90"
@@ -302,29 +395,52 @@ const AdminDashboard = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map((event) => (
-              <Card key={event._id} className="hover:shadow-lg transition-shadow cursor-pointer relative" onClick={() => { setViewingEvent(event); setShowViewModal(true); }}>
+              <Card
+                key={event._id}
+                className="hover:shadow-lg transition-shadow cursor-pointer relative"
+                onClick={() => {
+                  setViewingEvent(event);
+                  setShowViewModal(true);
+                }}
+              >
                 {/* Edit/Delete actions */}
                 <div className="absolute top-2 right-2 z-10 flex gap-2">
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); handleEditEvent(event); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditEvent(event);
+                    }}
                     className="bg-white/90 hover:bg-white text-gray-700 hover:text-lnmiit-maroon border border-gray-200 rounded-full p-2 shadow"
                     aria-label="Edit event"
                     title="Edit"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="w-4 h-4"
+                    >
                       <path d="M21.731 2.269a2.625 2.625 0 00-3.714 0l-1.214 1.214 3.714 3.714 1.214-1.214a2.625 2.625 0 000-3.714z" />
                       <path d="M3 17.25V21h3.75L19.092 8.658l-3.714-3.714L3 17.25z" />
                     </svg>
                   </button>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); handleRequestDelete(event._id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRequestDelete(event._id);
+                    }}
                     className="bg-white/90 hover:bg-white text-gray-700 hover:text-red-600 border border-gray-200 rounded-full p-2 shadow"
                     aria-label="Delete event"
                     title="Delete"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      className="w-4 h-4"
+                    >
                       <path d="M9 3a1 1 0 00-1 1v1H5.5a1 1 0 000 2h13a1 1 0 100-2H16V4a1 1 0 00-1-1H9z" />
                       <path d="M6 9a1 1 0 011 1v8a2 2 0 002 2h6a2 2 0 002-2v-8a1 1 0 112 0v8a4 4 0 01-4 4H9a4 4 0 01-4-4v-8a1 1 0 011-1z" />
                       <path d="M10 11a1 1 0 011 1v6a1 1 0 11-2 0v-6a1 1 0 011-1zm4 0a1 1 0 011 1v6a1 1 0 11-2 0v-6a1 1 0 011-1z" />
@@ -333,8 +449,8 @@ const AdminDashboard = () => {
                 </div>
                 <CardContent className="p-0">
                   {event.image && (
-                    <img 
-                      src={event.image} 
+                    <img
+                      src={event.image}
                       alt={event.title}
                       className="w-full h-64 object-cover rounded-t-lg"
                     />
@@ -344,13 +460,29 @@ const AdminDashboard = () => {
                       <CardTitle className="text-xl text-lnmiit-maroon">
                         {event.title}
                       </CardTitle>
-                      <span className={`text-xs px-2 py-1 rounded ${event.type === 'notice' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                        {event.type === 'notice' ? 'Notice' : 'Event'}
+                      <span
+                        className={`text-xs px-2 py-1 rounded ${
+                          event.type === "notice"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {event.type === "notice" ? "Notice" : "Event"}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-1">{formatDate(event.eventDate)}</p>
-                    {event.venue && <p className="text-xs text-gray-500 mb-1">📍 {event.venue}</p>}
-                    {event.time && <p className="text-xs text-gray-500 mb-2">🕐 {event.time}</p>}
+                    <p className="text-sm text-gray-600 mb-1">
+                      {formatDate(event.eventDate)}
+                    </p>
+                    {event.venue && (
+                      <p className="text-xs text-gray-500 mb-1">
+                        📍 {event.venue}
+                      </p>
+                    )}
+                    {event.time && (
+                      <p className="text-xs text-gray-500 mb-2">
+                        🕐 {event.time}
+                      </p>
+                    )}
                     <ExpandableText text={event.description} lines={2} />
                   </div>
                 </CardContent>
@@ -370,15 +502,26 @@ const AdminDashboard = () => {
               aria-label="Close"
               onClick={() => setShowViewModal(false)}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-gray-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
 
             <div className="max-h-[75vh] overflow-y-auto">
               {viewingEvent.image && (
-                <img 
-                  src={viewingEvent.image} 
+                <img
+                  src={viewingEvent.image}
                   alt={viewingEvent.title}
                   className="w-full max-h-[240px] object-contain mb-3 rounded-t-lg"
                 />
@@ -392,18 +535,24 @@ const AdminDashboard = () => {
                 <div className="space-y-3">
                   <div>
                     <p className="text-xs text-gray-600">Date</p>
-                    <p className="text-sm font-medium">{formatDate(viewingEvent.eventDate)}</p>
+                    <p className="text-sm font-medium">
+                      {formatDate(viewingEvent.eventDate)}
+                    </p>
                   </div>
                   {viewingEvent.venue && (
                     <div>
                       <p className="text-xs text-gray-600">Venue</p>
-                      <p className="text-sm font-medium">📍 {viewingEvent.venue}</p>
+                      <p className="text-sm font-medium">
+                        📍 {viewingEvent.venue}
+                      </p>
                     </div>
                   )}
                   {viewingEvent.time && (
                     <div>
                       <p className="text-xs text-gray-600">Time</p>
-                      <p className="text-sm font-medium">🕐 {viewingEvent.time}</p>
+                      <p className="text-sm font-medium">
+                        🕐 {viewingEvent.time}
+                      </p>
                     </div>
                   )}
                   <div>
@@ -423,7 +572,7 @@ const AdminDashboard = () => {
           <Card className="w-full max-w-lg">
             <CardHeader>
               <CardTitle className="text-2xl text-lnmiit-maroon">
-                {editingEvent ? 'Edit Event/Notice' : 'Add New Event/Notice'}
+                {editingEvent ? "Edit Event/Notice" : "Add New Event/Notice"}
               </CardTitle>
             </CardHeader>
             <CardContent className="max-h-[70vh] overflow-y-auto">
@@ -436,8 +585,10 @@ const AdminDashboard = () => {
                         type="radio"
                         name="type"
                         value="event"
-                        checked={formData.type === 'event'}
-                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                        checked={formData.type === "event"}
+                        onChange={(e) =>
+                          setFormData({ ...formData, type: e.target.value })
+                        }
                         className="w-4 h-4"
                       />
                       <span>Event</span>
@@ -447,8 +598,10 @@ const AdminDashboard = () => {
                         type="radio"
                         name="type"
                         value="notice"
-                        checked={formData.type === 'notice'}
-                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                        checked={formData.type === "notice"}
+                        onChange={(e) =>
+                          setFormData({ ...formData, type: e.target.value })
+                        }
                         className="w-4 h-4"
                       />
                       <span>Notice</span>
@@ -456,12 +609,18 @@ const AdminDashboard = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="title">{formData.type === 'notice' ? 'Notice Title' : 'Event Title'}</Label>
+                  <Label htmlFor="title">
+                    {formData.type === "notice"
+                      ? "Notice Title"
+                      : "Event Title"}
+                  </Label>
                   <Input
                     id="title"
                     type="text"
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
                     required
                     placeholder="Enter event title"
                   />
@@ -472,80 +631,119 @@ const AdminDashboard = () => {
                   <textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
                     required
                     placeholder="Enter event description"
                     className="w-full min-h-[100px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lnmiit-maroon"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="eventDate">Event Date</Label>
-                  <Input
-                    id="eventDate"
-                    type="date"
-                    value={formData.eventDate}
-                    onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
-                    min={new Date().toISOString().split('T')[0]}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="venue">Venue</Label>
-                  <Input
-                    id="venue"
-                    type="text"
-                    value={formData.venue}
-                    onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
-                    required
-                    placeholder="Enter event venue"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Time</Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="timeStart" className="text-xs text-gray-600">Start</Label>
+                {/* Show date, venue, and time only for events */}
+                {formData.type === "event" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="eventDate">Event Date</Label>
                       <Input
-                        id="timeStart"
-                        type="time"
-                        value={timeStart}
-                        onChange={(e) => setTimeStart(e.target.value)}
+                        id="eventDate"
+                        type="date"
+                        value={formData.eventDate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            eventDate: e.target.value,
+                          })
+                        }
+                        min={new Date().toISOString().split("T")[0]}
                         required
                       />
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="timeEnd" className="text-xs text-gray-600">End</Label>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="venue">Venue</Label>
                       <Input
-                        id="timeEnd"
-                        type="time"
-                        value={timeEnd}
-                        onChange={(e) => setTimeEnd(e.target.value)}
+                        id="venue"
+                        type="text"
+                        value={formData.venue}
+                        onChange={(e) =>
+                          setFormData({ ...formData, venue: e.target.value })
+                        }
                         required
+                        placeholder="Enter event venue"
                       />
                     </div>
-                  </div>
-                </div>
+
+                    <div className="space-y-2">
+                      <Label>Time</Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label
+                            htmlFor="timeStart"
+                            className="text-xs text-gray-600"
+                          >
+                            Start
+                          </Label>
+                          <Input
+                            id="timeStart"
+                            type="time"
+                            value={timeStart}
+                            onChange={(e) => setTimeStart(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label
+                            htmlFor="timeEnd"
+                            className="text-xs text-gray-600"
+                          >
+                            End
+                          </Label>
+                          <Input
+                            id="timeEnd"
+                            type="time"
+                            value={timeEnd}
+                            onChange={(e) => setTimeEnd(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="image">Event Image (Optional)</Label>
+                  {uploadingImage && (
+                    <p className="text-sm text-blue-600">Uploading image...</p>
+                  )}
                   <div className="space-y-3">
                     {imagePreview ? (
                       <div className="relative">
-                        <img 
-                          src={imagePreview} 
-                          alt="Preview" 
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
                           className="w-full h-48 object-cover rounded-lg border border-gray-300"
                         />
                         <button
                           type="button"
                           onClick={handleRemoveImage}
-                          className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                          disabled={uploadingImage}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors disabled:opacity-50"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
                           </svg>
                         </button>
                       </div>
@@ -556,14 +754,37 @@ const AdminDashboard = () => {
                           type="file"
                           accept="image/*"
                           onChange={handleImageChange}
+                          disabled={uploadingImage}
                           className="hidden"
                         />
-                        <label htmlFor="image" className="cursor-pointer">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        <label
+                          htmlFor="image"
+                          className={
+                            uploadingImage
+                              ? "cursor-not-allowed opacity-50"
+                              : "cursor-pointer"
+                          }
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-12 w-12 mx-auto text-gray-400 mb-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
                           </svg>
-                          <p className="text-sm text-gray-600">Click to upload image</p>
-                          <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 5MB</p>
+                          <p className="text-sm text-gray-600">
+                            Click to upload image
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            PNG, JPG, GIF up to 5MB
+                          </p>
                         </label>
                       </div>
                     )}
@@ -582,7 +803,7 @@ const AdminDashboard = () => {
                     type="submit"
                     className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90"
                   >
-                    {editingEvent ? 'Update' : 'Create'}
+                    {editingEvent ? "Update" : "Create"}
                   </Button>
                 </div>
               </form>
@@ -592,16 +813,32 @@ const AdminDashboard = () => {
       )}
 
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowDeleteModal(false)}>
-          <Card className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <Card
+            className="w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
             <CardHeader>
               <CardTitle className="text-lg">Confirm Deletion</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-700 mb-4">Are you sure you want to delete this event? This action cannot be undone.</p>
+              <p className="text-sm text-gray-700 mb-4">
+                Are you sure you want to delete this event? This action cannot
+                be undone.
+              </p>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
-                <Button variant="destructive" onClick={handleDeleteEvent}>Delete</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteEvent}>
+                  Delete
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -609,8 +846,14 @@ const AdminDashboard = () => {
       )}
 
       {showChangePwd && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setShowChangePwd(false)}>
-          <Card className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={() => setShowChangePwd(false)}
+        >
+          <Card
+            className="w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
             <CardHeader>
               <CardTitle className="text-lg">Change Password</CardTitle>
             </CardHeader>
@@ -618,20 +861,61 @@ const AdminDashboard = () => {
               <form onSubmit={submitChangePassword} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="currentPassword">Current Password</Label>
-                  <Input id="currentPassword" type="password" value={pwdForm.currentPassword} onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })} required />
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    value={pwdForm.currentPassword}
+                    onChange={(e) =>
+                      setPwdForm({
+                        ...pwdForm,
+                        currentPassword: e.target.value,
+                      })
+                    }
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="newPassword">New Password</Label>
-                  <Input id="newPassword" type="password" value={pwdForm.newPassword} onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })} required minLength={6} />
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={pwdForm.newPassword}
+                    onChange={(e) =>
+                      setPwdForm({ ...pwdForm, newPassword: e.target.value })
+                    }
+                    required
+                    minLength={6}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input id="confirmPassword" type="password" value={pwdForm.confirmPassword} onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })} required />
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={pwdForm.confirmPassword}
+                    onChange={(e) =>
+                      setPwdForm({
+                        ...pwdForm,
+                        confirmPassword: e.target.value,
+                      })
+                    }
+                    required
+                  />
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setShowChangePwd(false)}>Cancel</Button>
-                  <Button type="submit" disabled={pwdLoading} className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90 text-white">
-                    {pwdLoading ? 'Updating...' : 'Update Password'}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowChangePwd(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={pwdLoading}
+                    className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90 text-white"
+                  >
+                    {pwdLoading ? "Updating..." : "Update Password"}
                   </Button>
                 </div>
               </form>
@@ -644,4 +928,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-

@@ -6,7 +6,6 @@ import {
 } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Home from "./pages/Home";
 import Events from "./pages/Events";
 import Notices from "./pages/Notices";
 import SuperAdminLogin from "./pages/SuperAdminLogin";
