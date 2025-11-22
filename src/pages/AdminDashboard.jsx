@@ -45,6 +45,7 @@ const AdminDashboard = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [timeStart, setTimeStart] = useState("");
   const [timeEnd, setTimeEnd] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -801,9 +802,14 @@ const AdminDashboard = () => {
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90"
+                    disabled={isSubmitting || uploadingImage}
+                    className="bg-lnmiit-maroon hover:bg-lnmiit-maroon/90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {editingEvent ? "Update" : "Create"}
+                    {isSubmitting
+                      ? "Saving..."
+                      : editingEvent
+                      ? "Update"
+                      : "Create"}
                   </Button>
                 </div>
               </form>
