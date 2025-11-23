@@ -9,6 +9,7 @@ import { accountAPI } from "@/api/account";
 import { eventAPI } from "@/api/events";
 import { noticeAPI } from "@/api/notices";
 import { uploadAPI } from "@/api/upload";
+import { geminiAPI } from "@/api/gemini";
 import { toast } from "react-toastify";
 import logo from "@/assets/lnmiit-logo.png";
 import ExpandableText from "@/components/ExpandableText";
@@ -46,6 +47,7 @@ const AdminDashboard = () => {
   const [timeStart, setTimeStart] = useState("");
   const [timeEnd, setTimeEnd] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -213,6 +215,70 @@ const AdminDashboard = () => {
       } finally {
         setUploadingImage(false);
       }
+    }
+  };
+
+  const handleGenerateDescription = async () => {
+    // Validate that title is provided
+    if (!formData.title || formData.title.trim() === "") {
+      toast.error("Please enter a title first");
+      return;
+    }
+
+    // Check if description exists - if not, show message
+    if (!formData.description || formData.description.trim() === "") {
+      toast.info("Please enter some information about your event or notice first, then click 'Generate with AI' to enhance it.");
+      return;
+    }
+
+    try {
+      setGeneratingDescription(true);
+
+      // Prepare additional info for events
+      const additionalInfo = {};
+      if (formData.type === "event") {
+        if (formData.venue) additionalInfo.venue = formData.venue;
+        if (formData.eventDate) {
+          const date = new Date(formData.eventDate);
+          additionalInfo.date = date.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+        }
+        if (timeStart && timeEnd) {
+          const format12h = (hhmm) => {
+            if (!hhmm) return "";
+            const [hStr, m] = hhmm.split(":");
+            let h = parseInt(hStr, 10);
+            const ampm = h >= 12 ? "PM" : "AM";
+            h = h % 12;
+            if (h === 0) h = 12;
+            return `${h}:${m} ${ampm}`;
+          };
+          additionalInfo.time = `${format12h(timeStart)} - ${format12h(timeEnd)}`;
+        }
+      }
+
+      // Include existing description for modification
+      const response = await geminiAPI.generateDescription(
+        formData.type,
+        formData.title,
+        additionalInfo,
+        formData.description // Pass existing description
+      );
+
+      setFormData({ ...formData, description: response.description });
+      toast.success("Description enhanced successfully!");
+    } catch (error) {
+      console.error("Error generating description:", error);
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to generate description. Please try again."
+      );
+    } finally {
+      setGeneratingDescription(false);
     }
   };
 
@@ -628,7 +694,45 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="description">Description</Label>
+                    <Button
+                      type="button"
+                      onClick={handleGenerateDescription}
+                      disabled={generatingDescription || !formData.title || isSubmitting}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                    >
+                      {generatingDescription ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-2 h-4 w-4"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Generating...
+                        </>
+                      ) : (
+                        "✨ Generate with AI"
+                      )}
+                    </Button>
+                  </div>
                   <textarea
                     id="description"
                     value={formData.description}
@@ -636,7 +740,7 @@ const AdminDashboard = () => {
                       setFormData({ ...formData, description: e.target.value })
                     }
                     required
-                    placeholder="Enter event description"
+                    placeholder="Enter some information about your event/notice, then click 'Generate with AI' to enhance it"
                     className="w-full min-h-[100px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lnmiit-maroon"
                   />
                 </div>
