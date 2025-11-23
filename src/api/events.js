@@ -2,8 +2,10 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-// Get token from localStorage
-const getToken = () => localStorage.getItem("superAdminToken");
+// Get token from localStorage (supports both admin and super-admin)
+const getToken = () => {
+  return localStorage.getItem("adminToken") || localStorage.getItem("superAdminToken");
+};
 
 // Create axios instance with default config
 const api = axios.create({

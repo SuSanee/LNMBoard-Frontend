@@ -6,6 +6,7 @@ import { eventAPI } from "@/api/events";
 import { toast } from "react-toastify";
 import logo from "@/assets/lnmiit-logo.png";
 import ExpandableText from "@/components/ExpandableText";
+import { ItemNotificationBell } from "@/components/ItemNotificationBell";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -220,12 +221,15 @@ const Events = () => {
               {activeEvents.map((event) => (
                 <Card
                   key={event._id}
-                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  className="hover:shadow-lg transition-shadow cursor-pointer relative"
                   onClick={() => {
                     setViewingEvent(event);
                     setShowViewModal(true);
                   }}
                 >
+                  <div className="absolute top-2 right-2 z-10">
+                    <ItemNotificationBell itemType="event" itemId={event._id} />
+                  </div>
                   <CardContent className="p-0">
                     {event.image && (
                       <img

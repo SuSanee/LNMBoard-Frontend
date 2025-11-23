@@ -1,0 +1,25 @@
+{
+  "name": "LNMBoard - Digital Notice Board",
+  "short_name": "LNMBoard",
+  "description": "LNMIIT's digital notice board to view events, announcements, and updates",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8C1616",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/lnmiit-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/lnmiit-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

@@ -6,6 +6,7 @@ import { noticeAPI } from "@/api/notices";
 import { toast } from "react-toastify";
 import logo from "@/assets/lnmiit-logo.png";
 import ExpandableText from "@/components/ExpandableText";
+import { ItemNotificationBell } from "@/components/ItemNotificationBell";
 
 const Notices = () => {
   const [notices, setNotices] = useState([]);
@@ -99,12 +100,15 @@ const Notices = () => {
               {notices.map((notice) => (
                 <Card
                   key={notice._id}
-                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  className="hover:shadow-lg transition-shadow cursor-pointer relative"
                   onClick={() => {
                     setViewingNotice(notice);
                     setShowViewModal(true);
                   }}
                 >
+                  <div className="absolute top-2 right-2 z-10">
+                    <ItemNotificationBell itemType="notice" itemId={notice._id} />
+                  </div>
                   <CardContent className="p-0">
                     {notice.image && (
                       <img
