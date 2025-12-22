@@ -6,11 +6,12 @@ import { noticeAPI } from "@/api/notices";
 import { toast } from "react-toastify";
 import logo from "@/assets/lnmiit-logo.png";
 import ExpandableText from "@/components/ExpandableText";
-import { ItemNotificationBell } from "@/components/ItemNotificationBell";
 
 const Notices = () => {
   const [notices, setNotices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingNotice, setViewingNotice] = useState(null);
   const navigate = useNavigate();
@@ -19,10 +20,23 @@ const Notices = () => {
     fetchNotices();
   }, []);
 
-  const fetchNotices = async () => {
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  // Refetch when debounced search changes
+  useEffect(() => {
+    fetchNotices(debouncedSearch);
+  }, [debouncedSearch]);
+
+  const fetchNotices = async (q) => {
     try {
       setLoading(true);
-      const data = await noticeAPI.getAllNotices();
+      const data = await noticeAPI.getAllNotices(q);
       setNotices(data);
     } catch (error) {
       console.error("Error fetching notices:", error);
@@ -84,6 +98,17 @@ const Notices = () => {
             <p className="text-gray-600 text-sm sm:text-base">
               Stay updated with our latest notices and announcements
             </p>
+            {/* Search Box */}
+            <div className="mt-4">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search notices by title or description..."
+                className="w-full md:w-1/2 p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-lnmiit-maroon"
+                aria-label="Search notices"
+              />
+            </div>
           </div>
 
           {/* Notices List */}
@@ -93,7 +118,11 @@ const Notices = () => {
             </div>
           ) : notices.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">No notices found</p>
+              <p className="text-gray-600 text-lg">
+                {debouncedSearch
+                  ? "No matching notices found"
+                  : "No notices found"}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -106,9 +135,6 @@ const Notices = () => {
                     setShowViewModal(true);
                   }}
                 >
-                  <div className="absolute top-2 right-2 z-10">
-                    <ItemNotificationBell itemType="notice" itemId={notice._id} />
-                  </div>
                   <CardContent className="p-0">
                     {notice.image && (
                       <img

@@ -4,7 +4,10 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // Get token from localStorage (supports both admin and super-admin)
 const getToken = () => {
-  return localStorage.getItem("adminToken") || localStorage.getItem("superAdminToken");
+  return (
+    localStorage.getItem("adminToken") ||
+    localStorage.getItem("superAdminToken")
+  );
 };
 
 // Create axios instance with default config
@@ -27,8 +30,9 @@ api.interceptors.request.use((config) => {
 // Notice API functions
 export const noticeAPI = {
   // Get all notices (public)
-  getAllNotices: async () => {
-    const response = await api.get("/");
+  getAllNotices: async (q) => {
+    const params = q && q.trim() ? { q: q.trim() } : {};
+    const response = await api.get("/", { params });
     return response.data;
   },
 
